@@ -1,117 +1,69 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '../common/Button';
-import { Input } from '../common/Input';
-import { useAuth } from '../../context/AuthContext';
-import { Container } from '../common/Container';
-
-type AuthMode = 'signin' | 'signup';
 
 export function AuthForm() {
-  const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  const { signIn, signUp } = useAuth();
-  const navigate = useNavigate();
-  
-  const toggleMode = () => {
-    setMode(mode === 'signin' ? 'signup' : 'signin');
-    setError(null);
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setLoading(true);
-    
+    setError(null);
+
     try {
-      if (mode === 'signin') {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-        navigate('/dashboard');
-      } else {
-        const { error } = await signUp(email, password);
-        if (error) throw error;
-        navigate('/dashboard');
+      // Call backend API for signup/login instead of direct supabase client
+      const response = await fetch('/.netlify/functions/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Authentication failed');
       }
+
+      // Handle success (e.g., redirect or update UI)
+      alert('Authentication successful');
     } catch (err) {
-      setError((err as Error).message || 'An error occurred');
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
-  };
-  
+  }
+
   return (
-    <Container className="flex items-center justify-center py-12" maxWidth="sm">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-md">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">
-            {mode === 'signin' ? 'Sign in to your account' : 'Create a new account'}
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {mode === 'signin'
-              ? "Don't have an account? "
-              : 'Already have an account? '}
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
-            </button>
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-              {error}
-            </div>
-          )}
-          
-          <div className="space-y-4">
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              label="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              required
-              label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          
-          <div>
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={loading}
-            >
-              {loading
-                ? 'Loading...'
-                : mode === 'signin'
-                ? 'Sign in'
-                : 'Sign up'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </Container>
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 bg-white rounded shadow">
+      <h2 className="text-xl font-semibold mb-4">Sign In / Sign Up</h2>
+      {error && <p className="text-red-600 mb-2">{error}</p>}
+      <label className="block mb-2">
+        Email
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          className="w-full border border-gray-300 rounded px-3 py-2"
+        />
+      </label>
+      <label className="block mb-4">
+        Password
+        <input
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          className="w-full border border-gray-300 rounded px-3 py-2"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+      >
+        {loading ? 'Loading...' : 'Submit'}
+      </button>
+    </form>
   );
 }

@@ -1,49 +1,50 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { HomePage } from './pages/HomePage';
-import { LoginPage } from './pages/LoginPage';
-import { SignupPage } from './pages/SignupPage';
-import { DashboardPage } from './pages/DashboardPage';
-import './index.css';
+import React, { useEffect, useState } from 'react';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
+interface MaintenanceRequest {
+  id: string;
+  title: string;
+  description: string;
+  // add other fields as needed
 }
 
-function App() {
+const App: React.FC = () => {
+  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchRequests() {
+      try {
+        const res = await fetch('/api/maintenance');
+        if (!res.ok) {
+          throw new Error(`Error fetching data: ${res.statusText}`);
+        }
+        const data: MaintenanceRequest[] = await res.json();
+        setRequests(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRequests();
+  }, []);
+
+  if (loading) return <div>Loading maintenance requests...</div>;
+  if (error) return <div>Error: {error}</div>;
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route 
-            path="/dashboard/*" 
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <div>
+      <h1>Maintenance Requests</h1>
+      <ul>
+        {requests.map((req) => (
+          <li key={req.id}>
+            <strong>{req.title}</strong>: {req.description}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
-}
+};
 
 export default App;

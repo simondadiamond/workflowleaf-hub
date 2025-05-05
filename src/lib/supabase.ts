@@ -1,3 +1,10 @@
-// Removed client-side Supabase client to prevent key exposure
-// All Supabase interactions are now done via serverless API routes
-export {}; // Empty module to avoid import errors
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

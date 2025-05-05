@@ -1,50 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
+import { DashboardPage } from './pages/DashboardPage';
 
-interface MaintenanceRequest {
-  id: string;
-  title: string;
-  description: string;
-  // add other fields as needed
-}
-
-const App: React.FC = () => {
-  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchRequests() {
-      try {
-        const res = await fetch('/api/maintenance');
-        if (!res.ok) {
-          throw new Error(`Error fetching data: ${res.statusText}`);
-        }
-        const data: MaintenanceRequest[] = await res.json();
-        setRequests(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchRequests();
-  }, []);
-
-  if (loading) return <div>Loading maintenance requests...</div>;
-  if (error) return <div>Error: {error}</div>;
-
+export default function App() {
   return (
-    <div>
-      <h1>Maintenance Requests</h1>
-      <ul>
-        {requests.map((req) => (
-          <li key={req.id}>
-            <strong>{req.title}</strong>: {req.description}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Add other routes as needed */}
+      </Routes>
+    </Router>
   );
-};
-
-export default App;
+}

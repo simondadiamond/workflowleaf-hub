@@ -1,6 +1,5 @@
 import { DashboardLayout } from '../components/dashboard/DashboardLayout';
 import { useEffect, useState } from 'react';
-import { fetchMaintenanceRequests } from '../lib/api';
 
 interface MaintenanceRequest {
   id: string;
@@ -11,6 +10,15 @@ interface MaintenanceRequest {
   description: string;
   status: string;
   user_id: string;
+}
+
+async function fetchMaintenanceRequests() {
+  // Call backend API endpoint (Netlify function) to get maintenance requests
+  const response = await fetch('/.netlify/functions/getMaintenanceRequests');
+  if (!response.ok) {
+    throw new Error('Failed to fetch maintenance requests');
+  }
+  return response.json() as Promise<MaintenanceRequest[]>;
 }
 
 export function DashboardPage() {

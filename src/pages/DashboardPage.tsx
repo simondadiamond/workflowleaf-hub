@@ -1,5 +1,6 @@
 import { DashboardLayout } from '../components/dashboard/DashboardLayout';
 import { useEffect, useState } from 'react';
+import { fetchMaintenanceRequests } from '../lib/api';
 
 interface MaintenanceRequest {
   id: string;
@@ -18,13 +19,9 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchRequests() {
+    async function loadRequests() {
       try {
-        const res = await fetch('/api/maintenance');
-        if (!res.ok) {
-          throw new Error('Failed to fetch maintenance requests');
-        }
-        const data = await res.json();
+        const data = await fetchMaintenanceRequests();
         setRequests(data);
       } catch (err) {
         setError((err as Error).message);
@@ -32,7 +29,7 @@ export function DashboardPage() {
         setLoading(false);
       }
     }
-    fetchRequests();
+    loadRequests();
   }, []);
 
   return (

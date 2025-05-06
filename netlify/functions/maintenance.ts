@@ -1,71 +1,97 @@
-import type { Handler } from '@netlify/functions';
-import { supabaseServer } from '../../src/lib/supabaseServer';
+import { Handler } from '@netlify/functions';
+import { createClient } from '@supabase/supabase-js';
 
-export const handler: Handler = async (event, context) => {
-  try {
-    if (event.httpMethod === 'GET') {
-      const { data, error } = await supabaseServer.from('maintenance_requests').select('*');
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-      if (error) {
-        return {
-          statusCode: 500,
-          body: JSON.stringify({ error: error.message }),
-        };
-      }
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      return {
-        statusCode: 200,
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-    }
+export const handler: Handler = async (event) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
+  };
 
-    if (event.httpMethod === 'POST') {
-      if (!event.body) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: 'Missing request body' }),
-        };
-      }
-
-      const body = JSON.parse(event.body);
-      const { unit, category, description, status, user_id } = body;
-
-      const { data, error } = await supabaseServer
-        .from('maintenance_requests')
-        .insert([{ unit, category, description, status, user_id }])
-        .select()
-        .single();
-
-      if (error) {
-        return {
-          statusCode: 500,
-          body: JSON.stringify({ error: error.message }),
-        };
-      }
-
-      return {
-        statusCode: 201,
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-    }
-
+  if (event.httpMethod === 'OPTIONS') {
     return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-      headers: {
-        Allow: 'GET, POST',
-      },
-    };
-  } catch (err) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Invalid request' }),
+      statusCode: 200,
+      headers: corsHeaders,
+      body: ''
     };
   }
-};
+
+  const userId = event.headers['x-user-id'];
+  if (!userId) {
+    return {
+      statusCode: 401,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Unauthorized' })
+    };
+  }
+
+  try {
+    switch (event.httpMethod) {
+      case 'GET': {
+        const { data, error } = await supabase
+          .from('maintenance_requests')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        return {
+          statusCode: 200,
+          headers: corsHeaders,
+          body: JSON.stringify(data)
+        };
+      }
+
+      case 'POST': {
+        if (!event.body) {
+          return {
+            statusCode: 400,
+            headers: corsHeaders,
+            body: JSON.stringify({ error: 'Missing request body' })
+          };
+        }
+
+        const { unit, category, description } = JSON.parse(event.body);
+
+        const { data, error } = await supabase
+          .from('maintenance_requests')
+          .insert({
+            unit,
+            category,
+            description,
+            status: 'new',
+            user_id: userId
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        return {
+          statusCode: 200,
+          headers: corsHeaders,
+          body: JSON.stringify(data)
+        };
+      }
+
+      default:
+        return {
+          statusCode: 405,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Method not allowed' })
+        };
+    }
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: (error as Error).message })
+    };
+  }
+}

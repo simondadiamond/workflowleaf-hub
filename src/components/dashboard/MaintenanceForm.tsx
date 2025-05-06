@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { MaintenanceCategory } from '../../types';
+import * as api from '../../lib/api';
 
 interface MaintenanceFormProps {
   onRequestSubmitted: () => void;
@@ -27,15 +27,11 @@ export function MaintenanceForm({ onRequestSubmitted }: MaintenanceFormProps) {
     setSuccess(false);
     
     try {
-      const { error } = await supabase.from('maintenance_requests').insert({
+      await api.createMaintenanceRequest(user.id, {
         unit,
         category,
         description,
-        status: 'new',
-        user_id: user.id,
       });
-      
-      if (error) throw error;
       
       setSuccess(true);
       setUnit('');
@@ -43,7 +39,6 @@ export function MaintenanceForm({ onRequestSubmitted }: MaintenanceFormProps) {
       setDescription('');
       onRequestSubmitted();
       
-      // Reset success message after 3 seconds
       setTimeout(() => {
         setSuccess(false);
       }, 3000);

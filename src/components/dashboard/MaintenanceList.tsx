@@ -1,25 +1,22 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { MaintenanceRequest } from '../../types';
 import { getCategoryLabel, getStatusLabel, getStatusColor, formatDate } from '../../lib/utils';
+import * as api from '../../lib/api';
 
 export function MaintenanceList() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   const fetchRequests = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('maintenance_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      setRequests(data as MaintenanceRequest[]);
+      const data = await api.getMaintenanceRequests(user.id);
+      setRequests(data);
     } catch (err) {
       setError('Failed to load maintenance requests');
       console.error(err);
@@ -30,23 +27,7 @@ export function MaintenanceList() {
   
   useEffect(() => {
     fetchRequests();
-    
-    // Set up a subscription to listen for changes
-    const subscription = supabase
-      .channel('maintenance_requests_changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'maintenance_requests' 
-      }, () => {
-        fetchRequests();
-      })
-      .subscribe();
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  }, [user]);
   
   if (loading) {
     return <div className="text-center py-8">Loading requests...</div>;

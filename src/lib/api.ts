@@ -1,55 +1,92 @@
-// Centralized API utility for calling Netlify functions
+const API_URL = '/.netlify/functions';
 
-export async function fetchMaintenanceRequests() {
-  const res = await fetch('/api/maintenance');
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to fetch maintenance requests');
-  }
-  return res.json();
-}
-
-export async function createMaintenanceRequest(requestData: {
-  unit: string;
-  category: string;
-  description: string;
-  status: string;
-  user_id: string;
-}) {
-  const res = await fetch('/api/maintenance', {
+export async function signUp(email: string, password: string) {
+  const response = await fetch(`${API_URL}/auth`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestData),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action: 'signUp', email, password }),
   });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to create maintenance request');
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
   }
-  return res.json();
+
+  return response.json();
 }
 
-export async function fetchProfiles() {
-  const res = await fetch('/api/profiles');
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to fetch profiles');
-  }
-  return res.json();
-}
-
-export async function upsertProfile(profileData: {
-  id: string;
-  full_name: string;
-  role: string;
-}) {
-  const res = await fetch('/api/profiles', {
+export async function signIn(email: string, password: string) {
+  const response = await fetch(`${API_URL}/auth`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(profileData),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action: 'signIn', email, password }),
   });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to update profile');
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
   }
-  return res.json();
+
+  return response.json();
+}
+
+export async function signOut() {
+  const response = await fetch(`${API_URL}/auth`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action: 'signOut' }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
+  }
+
+  return response.json();
+}
+
+export async function getMaintenanceRequests(userId: string) {
+  const response = await fetch(`${API_URL}/maintenance`, {
+    headers: {
+      'x-user-id': userId,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
+  }
+
+  return response.json();
+}
+
+export async function createMaintenanceRequest(
+  userId: string,
+  data: {
+    unit: string;
+    category: string;
+    description: string;
+  }
+) {
+  const response = await fetch(`${API_URL}/maintenance`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-id': userId,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
+  }
+
+  return response.json();
 }

@@ -12,17 +12,8 @@ export function LoginPage() {
           Back to home
         </Link>
       </Container>
-
+      
       <AuthForm />
-
-      <Container className="py-4 text-center">
-        <p className="text-gray-700">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-600 hover:underline">
-            Sign up here
-          </Link>
-        </p>
-      </Container>
     </div>
   );
 }

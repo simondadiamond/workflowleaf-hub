@@ -2,7 +2,9 @@ import type { Handler } from '@netlify/functions';
 import { supabaseServer } from '../../../../src/lib/supabaseServer';
 
 export const handler: Handler = async (event) => {
+  console.log('[signin] Function invoked');
   if (event.httpMethod !== 'POST') {
+    console.log('[signin] Method not allowed:', event.httpMethod);
     return {
       statusCode: 405,
       body: JSON.stringify({ message: 'Method Not Allowed' }),
@@ -11,6 +13,7 @@ export const handler: Handler = async (event) => {
   }
 
   if (!event.body) {
+    console.log('[signin] Missing request body');
     return {
       statusCode: 400,
       body: JSON.stringify({ message: 'Missing request body' }),
@@ -20,8 +23,10 @@ export const handler: Handler = async (event) => {
 
   try {
     const { email, password } = JSON.parse(event.body);
+    console.log('[signin] Parsed body:', { email });
 
     if (!email || !password) {
+      console.log('[signin] Email or password missing');
       return {
         statusCode: 400,
         body: JSON.stringify({ message: 'Email and password are required' }),
@@ -35,6 +40,7 @@ export const handler: Handler = async (event) => {
     });
 
     if (error) {
+      console.log('[signin] Supabase signIn error:', error.message);
       return {
         statusCode: 401,
         body: JSON.stringify({ message: error.message }),
@@ -42,12 +48,14 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    console.log('[signin] Sign in successful');
     return {
       statusCode: 200,
       body: JSON.stringify({ session: data.session }),
       headers: { 'Content-Type': 'application/json' },
     };
   } catch (err) {
+    console.log('[signin] Internal server error:', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ message: 'Internal server error' }),

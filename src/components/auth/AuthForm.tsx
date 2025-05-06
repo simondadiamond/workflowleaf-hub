@@ -8,25 +8,29 @@ export function AuthForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log('[AuthForm] handleSubmit called');
     setLoading(true);
     setError(null);
 
     try {
-      // Call backend API for signup/login instead of direct supabase client
-      const response = await fetch('/.netlify/functions/auth', {
+      console.log('[AuthForm] Sending login request', { email });
+      const response = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      console.log('[AuthForm] Received response', response);
 
       if (!response.ok) {
         const data = await response.json();
+        console.error('[AuthForm] Login failed:', data.message);
         throw new Error(data.message || 'Authentication failed');
       }
 
       // Handle success (e.g., redirect or update UI)
       alert('Authentication successful');
     } catch (err) {
+      console.error('[AuthForm] Error during login:', err);
       setError((err as Error).message);
     } finally {
       setLoading(false);

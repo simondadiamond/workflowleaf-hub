@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
 
 type AuthContextType = {
   session: Session | null;
@@ -24,44 +23,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to call backend API for auth state
+  const fetchSession = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/session');
+      if (!res.ok) throw new Error('Failed to fetch session');
+      const json = await res.json();
+      setSession(json.session ?? null);
+      setUser(json.session?.user ?? null);
+    } catch (error) {
+      console.error('Error fetching session:', error);
+      setSession(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const getSession = async () => {
-      setLoading(true);
-      
-      // Get the current session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error(error);
-      }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    };
+    fetchSession();
 
-    getSession();
+    // Setup polling or websocket for auth state changes if needed
+    // For simplicity, we can poll every 30 seconds or rely on page reloads
+    // Alternatively, implement event-based auth state sync if backend supports it
 
-    // Set up the listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    // Example polling (optional):
+    // const interval = setInterval(fetchSession, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-
-      return { data: data.session, error };
+      if (!res.ok) {
+        const errorData = await res.json();
+        return { data: null, error: new Error(errorData.message || 'Sign up failed') };
+      }
+      const json = await res.json();
+      setSession(json.session ?? null);
+      setUser(json.session?.user ?? null);
+      return { data: json.session, error: null };
     } catch (error) {
       return { data: null, error: error as Error };
     }
@@ -69,12 +75,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-
-      return { data: data.session, error };
+      if (!res.ok) {
+        const errorData = await res.json();
+        return { data: null, error: new Error(errorData.message || 'Sign in failed') };
+      }
+      const json = await res.json();
+      setSession(json.session ?? null);
+      setUser(json.session?.user ?? null);
+      return { data: json.session, error: null };
     } catch (error) {
       return { data: null, error: error as Error };
     }
@@ -82,9 +95,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const res = await fetch('/api/auth/signout', {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Sign out failed:', errorData.message);
+      }
+      setSession(null);
+      setUser(null);
     } catch (error) {
-      console.error(error);
+      console.error('Sign out error:', error);
     }
   };
 

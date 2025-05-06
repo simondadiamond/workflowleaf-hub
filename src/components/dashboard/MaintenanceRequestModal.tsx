@@ -1,22 +1,55 @@
 import { useEffect, useState } from 'react';
-import { MaintenanceRequest } from '../../types';
+import { MaintenanceRequest, MaintenanceNote } from '../../types';
 import { formatDate, getCategoryLabel, getStatusLabel, getStatusColor } from '../../lib/utils';
+import {
+  updateMaintenanceStatus,
+  getMaintenanceNotes,
+  addMaintenanceNote,
+} from '../../lib/api';
 
 interface MaintenanceRequestModalProps {
   requestId: string | null;
   onClose: () => void;
 }
 
+const STATUS_OPTIONS = [
+  { value: 'new', label: 'New' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'on_hold', label: 'On Hold (e.g., Waiting Parts)' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
 export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceRequestModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [request, setRequest] = useState<MaintenanceRequest | null>(null);
 
+  // Status update state
+  const [status, setStatus] = useState<string>('');
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusSuccess, setStatusSuccess] = useState<string | null>(null);
+
+  // Notes state
+  const [notes, setNotes] = useState<MaintenanceNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+  const [newNote, setNewNote] = useState('');
+  const [noteAdding, setNoteAdding] = useState(false);
+  const [noteAddError, setNoteAddError] = useState<string | null>(null);
+
+  // Fetch request details and notes
   useEffect(() => {
     if (!requestId) {
       setRequest(null);
       setError(null);
       setLoading(false);
+      setStatus('');
+      setNotes([]);
+      setNotesError(null);
+      setNotesLoading(false);
       return;
     }
 
@@ -24,13 +57,13 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
       setLoading(true);
       setError(null);
       try {
-        // Use new flat API endpoint with query parameter
         const res = await fetch(`/api/maintenance-requests-id?id=${encodeURIComponent(requestId)}`);
         if (!res.ok) {
           throw new Error(`Failed to fetch request details: ${res.status} ${res.statusText}`);
         }
         const data = await res.json();
         setRequest(data);
+        setStatus(data.status);
       } catch (err) {
         setError((err as Error).message);
         setRequest(null);
@@ -39,8 +72,62 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
       }
     };
 
+    const fetchNotes = async () => {
+      setNotesLoading(true);
+      setNotesError(null);
+      try {
+        const notesData = await getMaintenanceNotes(requestId);
+        setNotes(
+          Array.isArray(notesData)
+            ? notesData.sort((a, b) => b.created_at.localeCompare(a.created_at))
+            : []
+        );
+      } catch (err) {
+        setNotesError((err as Error).message);
+        setNotes([]);
+      } finally {
+        setNotesLoading(false);
+      }
+    };
+
     fetchRequest();
+    fetchNotes();
   }, [requestId]);
+
+  // Status update handler
+  const handleStatusUpdate = async () => {
+    if (!requestId || !status) return;
+    setStatusUpdating(true);
+    setStatusError(null);
+    setStatusSuccess(null);
+    try {
+      await updateMaintenanceStatus(requestId, status);
+      setStatusSuccess('Status updated successfully.');
+      // Optionally, refetch request details to get updated_at, etc.
+      setRequest((prev) => prev ? { ...prev, status } : prev);
+    } catch (err) {
+      setStatusError((err as Error).message);
+    } finally {
+      setStatusUpdating(false);
+      setTimeout(() => setStatusSuccess(null), 2000);
+    }
+  };
+
+  // Add note handler
+  const handleAddNote = async () => {
+    if (!requestId || !newNote.trim()) return;
+    setNoteAdding(true);
+    setNoteAddError(null);
+    try {
+      const added = await addMaintenanceNote(requestId, newNote.trim());
+      setNotes((prev) => [added, ...prev]);
+      setNewNote('');
+    } catch (err) {
+      setNoteAddError((err as Error).message);
+    } finally {
+      setNoteAdding(false);
+    }
+  };
 
   if (!requestId) return null;
 
@@ -103,6 +190,35 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
                 {getStatusLabel(request.status)}
               </span>
             </div>
+            {/* Editable status dropdown */}
+            <div className="flex items-center gap-2 mt-2">
+              <select
+                className="border rounded px-2 py-1 text-sm"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                disabled={statusUpdating}
+                aria-label="Update status"
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm disabled:opacity-60"
+                onClick={handleStatusUpdate}
+                disabled={statusUpdating || status === request.status}
+              >
+                {statusUpdating ? 'Updating...' : 'Update Status'}
+              </button>
+              {statusError && (
+                <span className="text-red-600 text-xs ml-2">{statusError}</span>
+              )}
+              {statusSuccess && (
+                <span className="text-green-600 text-xs ml-2">{statusSuccess}</span>
+              )}
+            </div>
             <div>
               <strong>Date Submitted:</strong> {formatDate(request.created_at)}
             </div>
@@ -111,6 +227,53 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
             </div>
           </div>
         )}
+
+        {/* Notes / Activity Log Section */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-2">Notes / Activity Log</h3>
+          <div className="flex flex-col gap-2 mb-4">
+            <textarea
+              className="border rounded px-2 py-1 min-h-[60px] resize-y"
+              placeholder="Add a note or activity log..."
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              disabled={noteAdding}
+              maxLength={1000}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm disabled:opacity-60"
+                onClick={handleAddNote}
+                disabled={noteAdding || !newNote.trim()}
+              >
+                {noteAdding ? 'Adding...' : 'Add Note'}
+              </button>
+              {noteAddError && (
+                <span className="text-red-600 text-xs ml-2">{noteAddError}</span>
+              )}
+            </div>
+          </div>
+          {notesLoading ? (
+            <p className="text-center text-gray-500">Loading notes...</p>
+          ) : notesError ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md mb-2">
+              {notesError}
+            </div>
+          ) : notes.length === 0 ? (
+            <p className="text-gray-500 text-sm">No notes yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {notes.map((note) => (
+                <li key={note.id} className="bg-gray-50 border border-gray-200 rounded p-2">
+                  <div className="text-xs text-gray-500 mb-1">
+                    {formatDate(note.created_at, true)}
+                  </div>
+                  <div className="whitespace-pre-wrap">{note.content}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

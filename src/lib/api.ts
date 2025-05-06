@@ -93,3 +93,36 @@ export async function createMaintenanceRequest(
 
   return response.json();
 }
+
+// New: Update maintenance status
+export async function updateMaintenanceStatus(requestId: string, newStatus: string) {
+  const url = `${API_URL}/update-maintenance-status?requestId=${encodeURIComponent(requestId)}&newStatus=${encodeURIComponent(newStatus)}`;
+  const response = await fetch(url, { method: 'POST' });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
+  }
+  return response.json();
+}
+
+// New: Fetch notes for a request
+export async function getMaintenanceNotes(requestId: string) {
+  const url = `${API_URL}/get-maintenance-notes?requestId=${encodeURIComponent(requestId)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
+  }
+  return response.json();
+}
+
+// New: Add a note to a request
+export async function addMaintenanceNote(requestId: string, noteText: string) {
+  const url = `${API_URL}/add-maintenance-note?requestId=${encodeURIComponent(requestId)}&noteText=${encodeURIComponent(noteText)}`;
+  const response = await fetch(url, { method: 'POST' });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error);
+  }
+  return response.json();
+}

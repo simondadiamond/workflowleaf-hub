@@ -12,7 +12,7 @@ export type MaintenanceRequest = {
   unit: string;
   category: string;
   description: string;
-  status: 'new' | 'assigned' | 'in_progress' | 'completed';
+  status: 'new' | 'assigned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
   user_id: string;
 };
 
@@ -24,3 +24,11 @@ export type MaintenanceCategory =
   'structural' | 
   'pest_control' | 
   'other';
+
+export type MaintenanceNote = {
+  id: string;
+  request_id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+};

@@ -1,4 +1,3 @@
-
 var SERVICE_NAME = undefined;
 var SERVICE_VERSION = undefined;
 import{createRequire}from"module";const require=createRequire(import.meta.url);
@@ -101,4 +100,3 @@ long/umd/index.js:
    *
    *)
 */
-

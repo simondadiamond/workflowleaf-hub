@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 interface MaintenanceRequestModalProps {
   requestId: string | null;
   onClose: () => void;
+  onRequestUpdated?: (updatedRequest: MaintenanceRequest) => void;
 }
 
 const STATUS_OPTIONS = [
@@ -22,7 +23,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceRequestModalProps) {
+export function MaintenanceRequestModal({ requestId, onClose, onRequestUpdated }: MaintenanceRequestModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [request, setRequest] = useState<MaintenanceRequest | null>(null);
@@ -107,8 +108,12 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
     try {
       await updateMaintenanceStatus(requestId, status);
       setStatusSuccess('Status updated successfully.');
-      // Optionally, refetch request details to get updated_at, etc.
-      setRequest((prev) => prev ? { ...prev, status } : prev);
+      // Update local request state
+      setRequest((prev) => (prev ? { ...prev, status } : prev));
+      // Notify parent about update
+      if (request) {
+        onRequestUpdated?.({ ...request, status });
+      }
     } catch (err) {
       setStatusError((err as Error).message);
     } finally {

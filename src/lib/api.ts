@@ -1,4 +1,4 @@
-const API_URL = '/.netlify/functions';
+const API_URL = '/api';
 
 export async function signUp(email: string, password: string) {
   const response = await fetch(`${API_URL}/auth`, {
@@ -52,10 +52,13 @@ export async function signOut() {
 }
 
 export async function getMaintenanceRequests(userId: string) {
-  const response = await fetch(`${API_URL}/maintenance`, {
+  const response = await fetch(`${API_URL}/maintenance-requests-search`, {
+    method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'x-user-id': userId,
     },
+    body: JSON.stringify({}),
   });
 
   if (!response.ok) {

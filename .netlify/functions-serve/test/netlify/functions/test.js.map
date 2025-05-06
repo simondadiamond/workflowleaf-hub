@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../home/project/netlify/functions/test.ts"],
+  "sourceRoot": "/tmp/tmp-110-UPqv6y2ctNb8",
+  "sourcesContent": ["import type { Handler } from '@netlify/functions';\n\nexport const handler: Handler = async () => {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: 'Test function works' }),\n  };\n};\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAEO,IAAM,UAAmB,YAAY;AAC1C,SAAO;AAAA,IACL,YAAY;AAAA,IACZ,MAAM,KAAK,UAAU,EAAE,SAAS,sBAAsB,CAAC;AAAA,EACzD;AACF;",
+  "names": []
+}

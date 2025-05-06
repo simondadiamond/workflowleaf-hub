@@ -50,7 +50,7 @@ export function MaintenanceList() {
       setUnitsLoading(true);
       setUnitsError(null);
       try {
-        const res = await fetch('/api/maintenance-requests/units');
+        const res = await fetch('/api/maintenance-requests-units');
         if (!res.ok) throw new Error('Failed to fetch units');
         const data: string[] = await res.json();
         setUnits(data);
@@ -76,7 +76,7 @@ export function MaintenanceList() {
         search: debouncedSearchTerm || null,
       };
 
-      const res = await fetch('/api/maintenance-requests/search', {
+      const res = await fetch('/api/maintenance-requests-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

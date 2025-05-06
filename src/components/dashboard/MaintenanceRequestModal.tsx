@@ -24,14 +24,16 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/maintenance-requests/${requestId}`);
+        // Use new flat API endpoint with query parameter
+        const res = await fetch(`/api/maintenance-requests-id?id=${encodeURIComponent(requestId)}`);
         if (!res.ok) {
-          throw new Error(`Failed to fetch request details: ${res.statusText}`);
+          throw new Error(`Failed to fetch request details: ${res.status} ${res.statusText}`);
         }
         const data = await res.json();
         setRequest(data);
       } catch (err) {
         setError((err as Error).message);
+        setRequest(null);
       } finally {
         setLoading(false);
       }

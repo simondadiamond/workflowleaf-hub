@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, MessageSquare, FileText, BarChart } from 'lucide-react';
+import { LayoutDashboard, LogOut, MessageSquare, FileText, BarChart, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
 
@@ -11,22 +11,32 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
-  
+
+  const toggleSidebar = () => {
+    setSidebarOpen((open) => !open);
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64 bg-primary text-white">
+      <div
+        className={`fixed inset-y-0 left-0 z-20 w-64 bg-primary text-white transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          sm:translate-x-0 sm:static sm:inset-auto`}
+      >
         <div className="p-4 h-full flex flex-col">
           <div className="mb-6">
             <h1 className="text-xl font-bold">WorkflowLeaf</h1>
             <p className="text-sm opacity-70">Property Manager Dashboard</p>
           </div>
-          
+
           <nav className="space-y-1 flex-1">
             <Link
               to="/dashboard"
@@ -62,11 +72,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               Analytics
             </button>
           </nav>
-          
+
           <div className="mt-auto">
-            <Button 
+            <Button
               onClick={handleSignOut}
-              variant="ghost" 
+              variant="ghost"
               className="w-full justify-start text-white hover:bg-primary-dark"
             >
               <LogOut className="mr-3 h-5 w-5" />
@@ -75,18 +85,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
       </div>
-      
+
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm z-10">
-          <div className="px-6 py-4">
-            <h2 className="text-xl font-medium">MaintenanceFlow AI</h2>
-          </div>
+        <header className="bg-white shadow-sm z-10 flex items-center justify-between px-6 py-4">
+          <button
+            onClick={toggleSidebar}
+            className="sm:hidden text-primary hover:text-primary-dark focus:outline-none"
+            aria-label="Toggle sidebar menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <h2 className="text-xl font-medium">MaintenanceFlow AI</h2>
+          <div className="w-6" /> {/* Placeholder for spacing */}
         </header>
-        
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          {children}
-        </main>
+
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">{children}</main>
       </div>
     </div>
   );

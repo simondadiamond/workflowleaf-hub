@@ -117,9 +117,14 @@ export async function getMaintenanceNotes(requestId: string) {
 }
 
 // New: Add a note to a request
-export async function addMaintenanceNote(requestId: string, noteText: string) {
+export async function addMaintenanceNote(requestId: string, noteText: string, userId: string) {
   const url = `${API_URL}/add-maintenance-note?requestId=${encodeURIComponent(requestId)}&noteText=${encodeURIComponent(noteText)}`;
-  const response = await fetch(url, { method: 'POST' });
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'x-user-id': userId,
+    },
+  });
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error);

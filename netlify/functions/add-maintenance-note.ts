@@ -6,6 +6,11 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
+function isValidUUID(uuid: string) {
+  // Simple UUID v4 validation
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+}
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -13,13 +18,16 @@ export const handler: Handler = async (event) => {
 
   const requestId = event.queryStringParameters?.requestId;
   const noteText = event.queryStringParameters?.noteText;
+  // Accept both lowercase and uppercase header keys
+  const userId = event.headers['x-user-id'] || event.headers['X-User-Id'];
 
-  if (!requestId || !noteText) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Missing requestId or noteText' }) };
+  if (!requestId || !noteText || !userId) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing requestId, noteText, or userId' }) };
   }
 
-  // For demo, user_id is not authenticated; in real app, get from session
-  const userId = 'system';
+  if (!isValidUUID(userId)) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid userId format' }) };
+  }
 
   try {
     const { data, error } = await supabase

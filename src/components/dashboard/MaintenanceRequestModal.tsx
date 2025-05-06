@@ -6,6 +6,7 @@ import {
   getMaintenanceNotes,
   addMaintenanceNote,
 } from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 
 interface MaintenanceRequestModalProps {
   requestId: string | null;
@@ -39,6 +40,9 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
   const [newNote, setNewNote] = useState('');
   const [noteAdding, setNoteAdding] = useState(false);
   const [noteAddError, setNoteAddError] = useState<string | null>(null);
+
+  // Auth
+  const { user } = useAuth();
 
   // Fetch request details and notes
   useEffect(() => {
@@ -115,11 +119,14 @@ export function MaintenanceRequestModal({ requestId, onClose }: MaintenanceReque
 
   // Add note handler
   const handleAddNote = async () => {
-    if (!requestId || !newNote.trim()) return;
+    if (!requestId || !newNote.trim() || !user?.id) {
+      setNoteAddError('You must be signed in to add a note.');
+      return;
+    }
     setNoteAdding(true);
     setNoteAddError(null);
     try {
-      const added = await addMaintenanceNote(requestId, newNote.trim());
+      const added = await addMaintenanceNote(requestId, newNote.trim(), user.id);
       setNotes((prev) => [added, ...prev]);
       setNewNote('');
     } catch (err) {

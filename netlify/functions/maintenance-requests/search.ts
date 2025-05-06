@@ -34,11 +34,10 @@ export const handler: Handler = async (event) => {
     }
 
     if (payload.search) {
-      // Simple case-insensitive search on description and unit
+      // Simple case-insensitive search on description only
       query = query.ilike('description', `%${payload.search}%`);
-      // Supabase does not support OR in a single query easily, so we do a workaround:
-      // We'll fetch by description ilike and then filter by unit ilike client-side or do two queries.
-      // For simplicity, we do description only here.
+      // Note: Supabase does not support OR easily in a single query for multiple columns,
+      // so this searches description only for simplicity.
     }
 
     const { data, error } = await query;

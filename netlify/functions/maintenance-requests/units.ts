@@ -14,7 +14,7 @@ export const handler: Handler = async (event) => {
   try {
     const { data, error } = await supabase
       .from('maintenance_requests')
-      .select('unit', { count: 'exact', head: false })
+      .select('unit')
       .neq('unit', '')
       .order('unit', { ascending: true });
 

@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, LogOut, MessageSquare, FileText, BarChart, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -12,7 +12,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // State to control sidebar open/close
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Effect to handle automatic sidebar visibility based on window width
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true); // Show sidebar on desktop
+      } else {
+        setSidebarOpen(false); // Hide sidebar on mobile by default
+      }
+    }
+
+    handleResize(); // Set initial state
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -30,6 +47,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         className={`fixed inset-y-0 left-0 z-20 w-64 bg-primary text-white transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           sm:translate-x-0 sm:static sm:inset-auto`}
+        aria-hidden={!sidebarOpen && window.innerWidth < 768}
       >
         <div className="p-4 h-full flex flex-col">
           <div className="mb-6">
@@ -37,7 +55,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <p className="text-sm opacity-70">Property Manager Dashboard</p>
           </div>
 
-          <nav className="space-y-1 flex-1">
+          <nav className="space-y-1 flex-1" aria-label="Main navigation">
             <Link
               to="/dashboard"
               className="flex items-center px-4 py-2 text-sm rounded-md bg-primary-dark"
@@ -89,10 +107,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm z-10 flex items-center justify-between px-6 py-4">
+          {/* Hamburger menu visible only on small screens */}
           <button
             onClick={toggleSidebar}
-            className="sm:hidden text-primary hover:text-primary-dark focus:outline-none"
-            aria-label="Toggle sidebar menu"
+            className="sm:hidden text-primary hover:text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+            aria-label={sidebarOpen ? 'Close sidebar menu' : 'Open sidebar menu'}
+            aria-expanded={sidebarOpen}
+            aria-controls="sidebar"
           >
             <Menu className="h-6 w-6" />
           </button>
